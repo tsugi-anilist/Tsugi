@@ -54,6 +54,8 @@ You decide what counts as NSFW: AniList's 18+ mark, the Ecchi genre, AniList's 1
 
 And if you just don't want them on screen, Hide NSFW titles takes them out of your list pages, Pick for me and search, without changing anything on AniList.
 
+<p><img src="docs/screenshots/nsfw.webp" width="49%" alt="Settings: what counts as NSFW"> <img src="docs/screenshots/nsfw-more.webp" width="49%" alt="Settings: make them private, keep new ones private"></p>
+
 ### Mass edit
 
 Select titles on your list and change their status, score, progress, dates, notes, custom lists or visibility all at once. You see a preview first, and everything can be undone.
