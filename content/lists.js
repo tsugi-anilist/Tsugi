@@ -166,9 +166,11 @@ function listMeta(key) {
 }
 const listName = (key) => (listMeta(key) || {}).name || 'this list';
 
-// Does this list use priorities? (Its menu's switch; by default, all but Completed and Dropped.)
+// Does this list use priorities? (Its menu's switch; by default, all but Completed and Dropped.) On someone else's
+// list your switches don't apply (1.0.1): their priorities show as AniList has them, when they use any.
 function prioOn(key) {
   if (!key) return true;
+  if (S.route && !ownPage()) return true;
   const m = objectOr(S.sorts[key]);
   if (typeof m.pr === 'boolean') return m.pr;
   if (S.settings.prioFinished) return true;
@@ -178,7 +180,7 @@ function prioOn(key) {
 }
 
 function setPrioOn(key, on) {
-  if (!key) return;
+  if (!key || (S.route && !ownPage())) return;
   S.sorts = { ...S.sorts, [key]: { ...objectOr(S.sorts[key]), pr: !!on } };
   store.set('sync', 'sorts', S.sorts);
 }
@@ -372,12 +374,25 @@ function bulkApplyCustom(key, fn, describe, relative) {
 const keyFor = (type, name) => `${type}/${String(name || '').trim().toLowerCase()}`;
 const listKey = (r = S.route) => (r ? keyFor(r.type, r.list) : null);
 
+// Other people's lists (1.0.1): your sorts, groups and filters are yours. Someone else's list starts in AniList's own
+// order with no filters but your NSFW choice; what you pick there lasts while you browse that person's lists (until
+// the page reloads) and never reaches your own lists or storage.
+const VISIT = { who: '', sorts: {}, filters: {} };
+function visit() {
+  const who = S.route ? String(S.route.user).toLowerCase() : '';
+  if (VISIT.who !== who) { VISIT.who = who; VISIT.sorts = {}; VISIT.filters = {}; }
+  return VISIT;
+}
+const visiting = () => !!S.route && !ownPage();
+const sortsHere = () => (visiting() ? visit().sorts : S.sorts);
+
 // A list's sort and group. Older versions stored { prio: true/false }.
 function arrangementOf(key) {
-  const m = objectOr(S.sorts[key]);
+  const away = visiting();
+  const m = objectOr(sortsHere()[key]);
   let by = typeof m.by === 'string' && (m.by === 'al' || m.by === 'prio' || m.by in SORTS) ? m.by : '';
   if (!by && typeof m.prio === 'boolean') by = m.prio ? 'prio' : 'al';
-  if (!by) by = S.settings.sortPage ? 'prio' : 'al';
+  if (!by) by = !away && S.settings.sortPage ? 'prio' : 'al';
   if (by === 'length' && !key.startsWith('ANIME/')) by = 'al';
   if (by === 'prio' && !prioOn(key)) by = 'al';
   // Sorts switched off (0.12.5): AniList's own order, or the priority sort the hub's button sets.
@@ -395,6 +410,7 @@ function setArrangement(key, patch) {
   const out = { by: next.by };
   if (next.dir) out.dir = next.dir;
   if (next.grp) out.grp = next.grp;
+  if (visiting()) { visit().sorts[key] = out; return; }
   const pr = objectOr(S.sorts[key]).pr;
   if (typeof pr === 'boolean') out.pr = pr;
   S.sorts = { ...S.sorts, [key]: out };

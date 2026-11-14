@@ -123,6 +123,7 @@ const S = {
   settings: normalizeSettings({}),
   viewerColor: null,
   auth: null,           // { viewer } when AniList's official login is connected
+  me: null,             // { id, name }: the AniList account seen last (local "me"), for ownPage()
   drawerOpen: false,
   view: 'list',         // 'list' | 'check' | 'settings'
   tab: 'PLANNING',
@@ -277,6 +278,7 @@ async function loadState() {
   siteThemeSaved = (await store.get('local', 'siteTheme')) || null; // main.js, noteSiteTheme
   const auth = await store.get('local', 'auth');
   S.auth = auth && auth.token && auth.viewer ? { viewer: auth.viewer } : null;
+  S.me = objectOr(await store.get('local', 'me')); // the AniList account seen last, for ownPage() before a list loads
 }
 
 // Settings changed in another tab, or the login changed from the toolbar popup.
@@ -669,6 +671,26 @@ function streamingSites(links) {
 
 function routeKey(r) { return r ? `${r.user.toLowerCase()}:${r.type}` : null; }
 
+// Is the list on this page yours? (1.0.1) Once it's read, AniList says (S.data.canEdit). Before that, your saved
+// login or the account AniList's own session showed last (local "me") tells, so someone else's list never starts in
+// your sorts and filters, not even for a moment. Nothing known yet: not yours.
+function ownPage() {
+  const r = S.route;
+  if (!r) return false;
+  if (S.data && S.data.key === routeKey(r)) return !!S.data.canEdit;
+  const me = (S.auth && S.auth.viewer) || S.me;
+  if (!me || !me.name) return false;
+  const u = String(r.user).toLowerCase();
+  return u === String(me.name).toLowerCase() || (me.id != null && u === String(me.id));
+}
+function noteMe(viewer) {
+  if (!viewer || !viewer.name) return;
+  const me = { id: viewer.id, name: viewer.name };
+  if (S.me && S.me.id === me.id && S.me.name === me.name) return;
+  S.me = me;
+  store.set('local', 'me', me);
+}
+
 // Your AniList profile color, for the accent ("From AniList"): read again once per page load, after the list (0.12.8).
 let viewerColorAsked = false;
 function refreshViewerColor() {
@@ -744,6 +766,7 @@ function ensureData(force = false) {
         userName: (col.user && col.user.name) || r.user,
         canEdit: !!viewer && (String(viewer.name).toLowerCase() === r.user.toLowerCase() || (!!col.user && col.user.id === viewer.id)),
       };
+      noteMe(viewer);
       if (viewer && !known) {   // (connected, refreshViewerColor reads it: the login's copy may be older)
         const color = (viewer.options && viewer.options.profileColor) || null;
         if (color !== S.viewerColor) {

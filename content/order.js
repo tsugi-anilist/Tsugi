@@ -67,6 +67,7 @@ const fineBlock = (key, prio) => (FO.lists[key] && FO.lists[key].o[prio]) || [];
 
 // For sorting: (priority, mediaId) -> its place in your order, or a large number when it has none.
 function fineRanks(key) {
+  if (S.route && !ownPage()) return () => 1e9; // your own order is for your lists only (1.0.1)
   const st = FO.lists[key];
   if (!st || !Object.keys(st.o).length) return () => 1e9;
   const maps = {};

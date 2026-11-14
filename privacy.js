@@ -14,7 +14,7 @@ const NSFW_PER = 50;               // titles per UpdateMediaListEntries
 const NSFW_LIST_QUERY = `query TsugiNsfwList($userId: Int, $type: MediaType, $chunk: Int) {
   MediaListCollection(userId: $userId, type: $type, forceSingleCompletedList: true, chunk: $chunk, perChunk: 500) {
     hasNextChunk
-    lists { entries { id mediaId private createdAt media { id format seasonYear startDate { year } isAdult genres tags { id rank } title { userPreferred } coverImage { medium color } } } }
+    lists { entries { id mediaId private createdAt media { id format seasonYear startDate { year } isAdult genres tags { id rank } title { userPreferred english romaji native } coverImage { medium color } } } }
   }
 }`;
 const NSFW_BULK = 'mutation TsugiNsfwPrivate($ids: [Int], $private: Boolean) { UpdateMediaListEntries(ids: $ids, private: $private) { id mediaId private } }';
@@ -55,6 +55,8 @@ function nsfwRow(x, kind, mal) {
   const f = nsfwFacts(m);
   return {
     id: x.mediaId, e: x.id, k: kind, t: (m.title && m.title.userPreferred) || `Title ${x.mediaId}`,
+    // Its other names, for finding it by any of them (1.0.1: Settings' "Add a title").
+    n: m.title ? [...new Set([m.title.english, m.title.romaji, m.title.native].filter((v) => v && v !== m.title.userPreferred))] : [],
     c: (m.coverImage && m.coverImage.medium) || null, col: (m.coverImage && m.coverImage.color) || null,
     f: m.format || null, y: m.seasonYear || (m.startDate && m.startDate.year) || null,
     pv: !!x.private, ca: x.createdAt || 0, a: f.a, g: f.g || [], tg: f.t || [], mal: !!mal[x.mediaId],

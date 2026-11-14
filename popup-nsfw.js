@@ -21,6 +21,8 @@ state.nsfw = {
   all: false,         // every row shown
   tags: null,         // AniList's genres and tags, to add your own (local "nsfw:tags", kept a week)
   adding: null,       // the box adding a genre or tag: { q, i (the suggestion under the keyboard), loading, error }
+  marking: null,      // the box adding a title by hand: { q, i } (1.0.1)
+  unveil: false,      // the review page's covers shown, all at once (1.0.1; while the popup stays open)
   msg: null,          // { kind, text } on the page
 };
 
@@ -127,23 +129,28 @@ const nsfwWhyRow = (r) => nsfwWhy({ a: r.a, g: r.g, t: r.tg }, state.nsfw.set, r
 const nsfwRowsOf = (kind) => { const j = state.nsfw.job; return nsfwHasRows(j) ? j.rows.filter((r) => kind === 'BOTH' || r.k === kind) : []; };
 const nsfwMadeNow = (r) => { const m = state.nsfw.made[r.id]; return !!m && !m.pub; };
 // What the page lists: NSFW titles still public (private mode), or private titles (public mode: the ones Tsugi made
-// private, or every one).
+// private, the private ones that count as NSFW (1.0.1: titles you made private on AniList and marked here too), or
+// every one).
 function nsfwListed(p) {
   const rows = nsfwRowsOf(p.kind);
   if (p.mode === 'private') return rows.filter((r) => !r.pv).map((r) => ({ r, why: nsfwWhyRow(r) })).filter((x) => x.why);
-  return rows.filter((r) => r.pv && (p.which === 'all' || nsfwMadeNow(r))).map((r) => ({ r, why: null }));
+  const which = { made: nsfwMadeNow, nsfw: nsfwCountsOf, all: () => true }[p.which] || nsfwMadeNow;
+  return rows.filter((r) => r.pv && which(r)).map((r) => ({ r, why: nsfwWhyRow(r) }));
 }
 function nsfwCounts(kind) {
   const rows = nsfwRowsOf(kind);
-  let nsfw = 0, pub = 0, priv = 0, made = 0;
+  let nsfw = 0, pub = 0, priv = 0, made = 0, privNsfw = 0;
   for (const r of rows) {
-    if (r.pv) { priv++; if (nsfwMadeNow(r)) made++; }
-    if (nsfwWhyRow(r)) { nsfw++; if (!r.pv) pub++; }
+    const counts = nsfwCountsOf(r);
+    if (r.pv) { priv++; if (nsfwMadeNow(r)) made++; if (counts) privNsfw++; }
+    if (counts) { nsfw++; if (!r.pv) pub++; }
   }
-  return { nsfw, pub, priv, made, total: rows.length };
+  return { nsfw, pub, priv, made, privNsfw, total: rows.length };
 }
 
 /* Settings: the group ---------------------------------------------------------------------------------------- */
+
+const nsfwCountsOf = (r) => !!nsfwWhyRow(r);
 
 // "18+, Ecchi, 18+ tags, 2 of yours": what counts for a kind, in a few words.
 function nsfwWords(d) {
@@ -197,7 +204,7 @@ function nsfwBody() {
       }, `${r}%`))),
       h('div', { class: 'set-d' }, 'How strongly a tag applies to the title, as AniList\'s voters rank it. A passing mention ranks low.')) : null,
     nsfwOwnField(k, d),
-    nsfwMarksNote(),
+    nsfwMarkedField(k),
     subhead('Private'),
     nsfwPrivateRow(k, word),
     nsfwSwitch('keep', 'Keep new ones private', N.set.keep[k]
@@ -250,15 +257,100 @@ function nsfwPublicRow(k, word) {
     h('button', { class: 'tp-btn', 'data-f': 'nsfw:public', 'data-nav': '', disabled: !c || !c.priv, onclick: () => nsfwOpenPage('public', k) }, 'Review'));
 }
 
-function nsfwMarksNote() {
-  const v = Object.values(state.nsfw.marks);
-  const yes = v.filter((x) => x === 1).length;
-  const no = v.length - yes;
-  if (!v.length) return h('p', { class: 'set-d nsfw-marks' }, 'A title\'s page here can say it always counts, or never does (Edit details).');
-  const parts = [];
-  if (yes) parts.push(yes === 1 ? '1 title you marked always counts' : `${yes} titles you marked always count`);
-  if (no) parts.push(no === 1 ? `${yes ? '1' : '1 title you marked'} never does` : `${no}${yes ? '' : ' titles you marked'} never do`);
-  return h('p', { class: 'set-d nsfw-marks' }, `${parts.join(', ')}. Change it on a title's page here, in Edit details.`);
+/* Titles you marked (1.0.1) -------------------------------------------------------------------------------- */
+// A title nothing above catches (no 18+ mark, no genre or tag of yours) can be added by hand: it then always counts,
+// so it's made private with the rest, hidden with the rest, and listed when you make NSFW titles public again. Found
+// in your own lists (the reading above) by any of its names. Titles marked "never" ("Not NSFW") are here too.
+
+const nsfwFold = (v) => String(v || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+function nsfwTitleHits(k) {
+  const N = state.nsfw;
+  const q = nsfwFold(N.marking && N.marking.q);
+  if (!q) return [];
+  const hits = [];
+  for (const r of nsfwRowsOf(k)) {
+    if (N.marks[r.id] === 1) continue;
+    let at = 2;   // 0: a name starts with it, 1: a name has it
+    for (const name of [r.t, ...(r.n || [])]) { const i = nsfwFold(name).indexOf(q); if (i === 0) { at = 0; break; } if (i > 0) at = 1; }
+    if (at < 2) hits.push({ r, at });
+  }
+  return hits.sort((a, b) => a.at - b.at || a.r.t.localeCompare(b.r.t)).slice(0, 8).map((x) => x.r);
+}
+function nsfwCloseMarking(focus) {
+  state.nsfw.marking = null;
+  render();
+  if (focus) { const b = app.querySelector('[data-f="nsfw:mark"]'); if (b) b.focus({ preventScroll: true }); }
+}
+async function nsfwAddTitle(r) {
+  state.nsfw.marking = null;
+  const was = await nsfwMark(r.id, 1);
+  const b = app.querySelector('[data-f="nsfw:mark"]');
+  if (b) b.focus({ preventScroll: true });
+  toast(`${r.t} counts as NSFW now`, { coverImage: { color: r.col } }, { undo: () => nsfwMark(r.id, was) });
+}
+async function nsfwUnmark(r) {
+  const was = await nsfwMark(r.id, null);
+  toast(`Tsugi decides for ${r.t} again`, { coverImage: { color: r.col } }, { undo: () => nsfwMark(r.id, was) });
+}
+const nsfwTitleMeta = (r) => [r.f ? FORMATS[r.f] || r.f : null, r.y, r.pv ? 'private' : null].filter(Boolean).join(' ');
+
+function nsfwMarkedField(k) {
+  const N = state.nsfw;
+  const word = NSFW_WORD[k];
+  const rows = new Map(nsfwRowsOf('BOTH').map((r) => [r.id, r]));
+  const yes = [], no = [];
+  let away = 0;
+  for (const [id, v] of Object.entries(N.marks)) {
+    const r = rows.get(Number(id));
+    if (!r) { if (rows.size) away++; continue; }
+    if (r.k === k) (v === 1 ? yes : no).push(r);
+  }
+  const byTitle = (a, b) => a.t.localeCompare(b.t);
+  const chip = (r) => h('span', { class: 'nsfw-chip' + (N.marks[r.id] === 0 ? ' is-never' : '') }, h('span', { class: 'nsfw-chip-t' }, r.t),
+    h('button', { class: 'nsfw-chip-x', 'data-f': `nsfw:unmark:${r.id}`, 'aria-label': `Let Tsugi decide for ${r.t}`, title: 'Let Tsugi decide', onclick: () => nsfwUnmark(r) }, icon('close')));
+  let adder;
+  if (!N.marking) {
+    adder = h('button', {
+      class: 'nsfw-add', 'data-f': 'nsfw:mark', 'data-nav': '',
+      onclick: () => { N.adding = null; N.marking = { q: '', i: 0 }; render(); const b = app.querySelector('.nsfw-mark-input'); if (b) b.focus(); },
+    }, icon('plus'), yes.length ? 'Add' : 'Add a title');
+  } else {
+    const hits = nsfwTitleHits(k);
+    const input = h('input', {
+      class: 'input nsfw-mark-input', type: 'text', value: N.marking.q, 'data-f': 'nsfw:mark:q', spellcheck: 'false', autocomplete: 'off',
+      placeholder: `A title on your ${word} list`, 'aria-label': 'Add a title', role: 'combobox', 'aria-expanded': String(hits.length > 0), 'aria-controls': 'nsfw-title-hits',
+      oninput: (ev) => { N.marking.q = ev.target.value; N.marking.i = 0; render(); },
+      onkeydown: (ev) => {
+        const n = nsfwTitleHits(k).length;
+        if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); if (n) { N.marking.i = (N.marking.i + (ev.key === 'ArrowDown' ? 1 : -1) + n) % n; render(); } }
+        else if (ev.key === 'Enter') { ev.preventDefault(); const r = nsfwTitleHits(k)[N.marking.i]; if (r) nsfwAddTitle(r); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); nsfwCloseMarking(true); }
+      },
+    });
+    let list = null;
+    if (!nsfwHasRows(N.job)) list = h('div', { class: 'nsfw-hit-note' }, spin(), 'Reading your lists');
+    else if (N.marking.q.trim() && !hits.length) list = h('div', { class: 'nsfw-hit-note' }, `No title by that name on your ${word} list, or it's already here.`);
+    else if (hits.length) {
+      list = h('div', { class: 'nsfw-hits', id: 'nsfw-title-hits', role: 'listbox' }, hits.map((r, i) => {
+        const why = nsfwWhyRow(r);
+        return h('button', {
+          class: 'nsfw-hit' + (i === N.marking.i ? ' is-on' : ''), role: 'option', 'aria-selected': String(i === N.marking.i), tabindex: '-1', 'data-id': r.id,
+          onclick: () => nsfwAddTitle(r), onpointerenter: () => { if (N.marking && N.marking.i !== i) { N.marking.i = i; render(); } },
+        }, h('span', { class: 'nsfw-hit-n' }, r.t), h('span', { class: 'nsfw-hit-k' }, why ? `Counts: ${why.map(nsfwWord).join(', ')}` : nsfwTitleMeta(r)));
+      }));
+    }
+    adder = h('div', { class: 'nsfw-adding' }, h('div', { class: 'field' }, input,
+      h('button', { class: 'btn', 'data-f': 'nsfw:mark:cancel', onclick: () => nsfwCloseMarking(true) }, 'Cancel')), list);
+  }
+  return h('div', { class: 'set-f nsfw-marked' },
+    h('div', { class: 'set-t' }, 'Titles you marked'),
+    h('div', { class: 'set-d' }, yes.length || no.length
+      ? 'They count, or never do, whatever your choices above. A title\'s page here has the same choice, in Edit details.'
+      : `For ${word} nothing above catches, like a title you made private on AniList yourself. A title's page here has the same choice, in Edit details.`),
+    yes.length || !N.marking ? h('div', { class: 'nsfw-chips' }, yes.sort(byTitle).map(chip), N.marking ? null : adder) : null,
+    N.marking ? adder : null,
+    no.length ? h('div', { class: 'nsfw-chips nsfw-never' }, h('span', { class: 'nsfw-chips-k' }, 'Never count'), no.sort(byTitle).map(chip)) : null,
+    away ? h('div', { class: 'set-d' }, away === 1 ? '1 more you marked isn\'t on your lists.' : `${away} more you marked aren't on your lists.`) : null);
 }
 
 /* Your own genres and tags ----------------------------------------------------------------------------------- */
@@ -358,7 +450,8 @@ function nsfwOwnField(k, d) {
 
 function nsfwOpenPage(mode, kind) {
   const N = state.nsfw;
-  N.page = { mode, kind, which: mode === 'public' && nsfwCounts(kind).made ? 'made' : 'all' };
+  const c = nsfwCounts(kind);
+  N.page = { mode, kind, which: mode !== 'public' ? 'all' : c.made ? 'made' : c.privNsfw ? 'nsfw' : 'all' };
   N.picks = {};
   N.all = false;
   N.msg = null;
@@ -424,10 +517,11 @@ function nsfwRow(p, x, ready) {
   const on = nsfwPicked(p.mode, r);
   const key = `${p.mode}:${r.id}`;
   let detail;
-  if (p.mode === 'private') detail = x.why.map((w) => h('span', { class: 'cmp-diff nsfw-why' }, nsfwWord(w)));
+  const whys = (x.why || []).map((w) => h('span', { class: 'cmp-diff nsfw-why' }, nsfwWord(w)));
+  if (p.mode === 'private') detail = whys;
   else {
     const m = N.made[r.id];
-    detail = [h('span', { class: 'cmp-piece' }, m && !m.pub ? `Made private by Tsugi ${ago(m.at)}` : 'Private')];
+    detail = [h('span', { class: 'cmp-piece' }, m && !m.pub ? `Made private by Tsugi ${ago(m.at)}` : 'Private'), ...whys];
   }
   const meta = [r.f ? FORMATS[r.f] || r.f : null, r.y].filter(Boolean);
   return h('div', { class: 'cmp-row nsfw-row', 'data-id': r.id, style: r.col ? `--c:${r.col}` : null },
@@ -441,13 +535,21 @@ function nsfwRow(p, x, ready) {
       meta.length || (p.kind === 'BOTH') ? h('div', { class: 'nsfw-meta' }, p.kind === 'BOTH' ? h('span', {}, r.k === 'MANGA' ? 'Manga' : 'Anime') : null, meta.map((t) => h('span', {}, String(t)))) : null,
       h('div', { class: 'cmp-diffs' }, detail),
       p.mode === 'private' && r.mal && nsfwMalShown() ? h('div', { class: 'cmp-note' }, 'Also on MyAnimeList') : null),
-    p.mode === 'private' && ready ? h('button', {
+    ready && x.why ? h('button', {
       class: 'trk-quiet nsfw-not', 'data-f': `nsfw:not:${r.id}`, 'data-nav': '', 'aria-label': `${r.t} isn't NSFW`,
       onclick: async () => {
         const was = await nsfwMark(r.id, 0);
         toast(`${r.t} never counts as NSFW now`, { coverImage: { color: r.col } }, { undo: () => nsfwMark(r.id, was) });
       },
-    }, 'Not NSFW') : null);
+    }, 'Not NSFW') : null,
+    // A private title nothing counts (made private on AniList by hand, say): one click adds it (1.0.1).
+    ready && !x.why ? h('button', {
+      class: 'trk-quiet nsfw-not', 'data-f': `nsfw:is:${r.id}`, 'data-nav': '', 'aria-label': `${r.t} is NSFW`,
+      onclick: async () => {
+        const was = await nsfwMark(r.id, 1);
+        toast(`${r.t} counts as NSFW now`, { coverImage: { color: r.col } }, { undo: () => nsfwMark(r.id, was) });
+      },
+    }, 'Mark NSFW') : null);
 }
 
 function nsfwFoot(p, listed) {
@@ -521,7 +623,7 @@ function nsfwPageView() {
   if (!toPrivate) {
     const c = nsfwCounts(p.kind);
     parts.push(h('div', { class: 'seg nsfw-which', role: 'radiogroup', 'aria-label': 'Which titles' },
-      [['made', `Made private by Tsugi (${c.made})`], ['all', `Every private title (${c.priv})`]].map(([w, label]) => h('button', {
+      [['made', `By Tsugi (${c.made})`], ['nsfw', `NSFW (${c.privNsfw})`], ['all', `All private (${c.priv})`]].map(([w, label]) => h('button', {
         class: 'seg-btn', role: 'radio', 'aria-checked': String(p.which === w), 'data-f': `nsfw:which:${w}`, 'data-nav': '', disabled: !ready, onclick: () => nsfwSetPage({ which: w }),
       }, label))));
   }
@@ -545,7 +647,8 @@ function nsfwPageView() {
     const what = p.kind === 'BOTH' ? 'titles' : NSFW_WORD[p.kind];
     parts.push(h('div', { class: 'cmp-same' }, icon('check'), h('span', {}, toPrivate
       ? `Every NSFW ${p.kind === 'BOTH' ? 'title' : what} on your list is private.`
-      : p.which === 'made' ? 'None of the titles Tsugi made private is private now.' : `None of your ${what} is private.`)));
+      : p.which === 'made' ? 'None of the titles Tsugi made private is private now.'
+        : p.which === 'nsfw' ? `None of your private ${what} counts as NSFW. "Mark NSFW" on All private adds one.` : `None of your ${what} is private.`)));
     return h('div', { class: 'cmp nsfw-page' }, head, parts);
   }
   const shown = N.all ? listed : listed.slice(0, NSFW_ROWS);
@@ -554,11 +657,12 @@ function nsfwPageView() {
       ? `${listed.length === 1 ? '1 title counts' : `${listed.length} titles count`} as NSFW and ${listed.length === 1 ? 'is' : 'are'} public. "Not NSFW" leaves one out for good.`
       : `${listed.length === 1 ? '1 title' : `${listed.length} titles`}.`),
     ready ? h('span', { class: 'trk-btns' },
+      h('button', { class: 'trk-quiet', 'data-f': 'nsfw:veil', 'aria-pressed': String(N.unveil), onclick: () => { N.unveil = !N.unveil; render(); } }, N.unveil ? 'Blur covers' : 'Show covers'),
       h('button', { class: 'trk-quiet', 'data-f': 'nsfw:all', onclick: () => { for (const x of listed) N.picks[`${p.mode}:${x.r.id}`] = true; render(); } }, 'Tick all'),
       h('button', { class: 'trk-quiet', 'data-f': 'nsfw:none', onclick: () => { for (const x of listed) N.picks[`${p.mode}:${x.r.id}`] = false; render(); } }, 'Untick all')) : null));
   parts.push(h('div', { class: 'cmp-rows' }, shown.map((x) => nsfwRow(p, x, ready))));
   if (shown.length < listed.length) parts.push(h('button', { class: 'more', 'data-f': 'nsfw:more', onclick: () => { N.all = true; render(); } }, `Show all ${listed.length}`));
-  return h('div', { class: 'cmp nsfw-page' }, head, parts, nsfwFoot(p, listed));
+  return h('div', { class: 'cmp nsfw-page' + (N.unveil ? ' is-unveiled' : '') }, head, parts, nsfwFoot(p, listed));
 }
 
 /* A title's page: does it count? ----------------------------------------------------------------------------- */

@@ -124,12 +124,22 @@ const savedFor = (type = S.route && S.route.type) => LV.saved.filter((s) => s.ty
 // The filters on this page (none when list views are turned off).
 function currentFilters() {
   if (!filtersOn() || !S.route) return emptyFilters();
+  if (visiting()) {
+    // Someone else's list (1.0.1): only your NSFW choice comes along ("Hide", as the setting does).
+    const v = visit().filters;
+    if (!(S.route.type in v)) {
+      const mine = normalizeFilters(LV.filters[S.route.type]);
+      v[S.route.type] = packFilters(normalizeFilters(mine.adult === 'hide' ? { adult: 'hide' } : {}));
+    }
+    return normalizeFilters(v[S.route.type]);
+  }
   return normalizeFilters(LV.filters[S.route.type]);
 }
 
 function setFilters(patch) {
   if (!S.route) return;
   const next = packFilters(normalizeFilters({ ...currentFilters(), ...patch }));
+  if (visiting()) { visit().filters[S.route.type] = next; filtersChanged(); return; }
   const all = { ...LV.filters };
   if (Object.keys(next).length) all[S.route.type] = next; else delete all[S.route.type];
   LV.filters = all;
@@ -754,7 +764,9 @@ function renderFilterHead(f) {
   LV.headVal.hidden = !txt;
   LV.headClear.hidden = !active;
   LV.headVal.classList.toggle('is-empty', !!st && nf > 0 && st.shown === 0);
-  LV.headVal.title = txt ? `Tsugi's filters show ${st.shown} of your ${plural(st.total)}. They stay on for all your ${typeWord()} lists until you clear them.` : '';
+  LV.headVal.title = !txt ? '' : visiting()
+    ? `Tsugi's filters show ${st.shown} of ${plural(st.total)} on this list. They stay on while you look at this person's lists, and never change yours.`
+    : `Tsugi's filters show ${st.shown} of your ${plural(st.total)}. They stay on for all your ${typeWord()} lists until you clear them.`;
   LV.saveAct.hidden = !active;
 }
 
@@ -1069,7 +1081,7 @@ function renderSaved(f) {
 function resetFilters(fromSaved = false) {
   const before = packFilters(currentFilters());
   setFilters(emptyFilters());
-  if (!fromSaved) toast(`Filters off: all your ${typeWord()} again`, 'ok', { label: 'Undo', run: () => setFilters(normalizeFilters(before)) });
+  if (!fromSaved) toast(visiting() ? `Filters off: the whole list again` : `Filters off: all your ${typeWord()} again`, 'ok', { label: 'Undo', run: () => setFilters(normalizeFilters(before)) });
 }
 
 function applySavedFilters(sv) {

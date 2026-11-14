@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Tsugi",
   "short_name": "Tsugi",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "Priority queue, pins, mass edit, posters, list filters, Ctrl+K and MyAnimeList sync for AniList. Unofficial, not affiliated.",
   "minimum_chrome_version": "116",
   "icons": {

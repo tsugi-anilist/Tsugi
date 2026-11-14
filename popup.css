@@ -1568,7 +1568,11 @@ textarea.input{ height: 72px; padding: 8px 10px; resize: none; font-size: 12px; 
 .nsfw-reading{ display: inline-flex; align-items: center; gap: 7px; }
 .nsfw-reading .spin{ width: 12px; height: 12px; }
 .nsfw-n{ font-weight: 500; color: rgb(var(--ink)); }
-.nsfw-marks{ margin: 2px 0 4px; }
+.nsfw-chip-t{ max-width: 30ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Titles you marked (1.0.1): "always" as the filled chips above, "never" as outlines on a line of their own. */
+.nsfw-never{ margin-top: 8px; }
+.nsfw-chips-k{ font-size: 12px; color: rgb(var(--muted)); margin-right: 2px; }
+.nsfw-chip.is-never{ background: transparent; box-shadow: inset 0 0 0 1px rgba(var(--line),.16); color: rgb(var(--text)); }
 .nsfw-chips{ display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .nsfw-chip{
   display: inline-flex; align-items: center; gap: 2px; height: 28px; padding: 1px 3px 0 10px; border-radius: 6px;
@@ -1602,6 +1606,8 @@ textarea.input{ height: 72px; padding: 8px 10px; resize: none; font-size: 12px; 
 .nsfw-ticks{ margin-top: 10px; }
 .nsfw-veil img{ filter: blur(5px) saturate(.85); transform: scale(1.18); transition: filter .18s var(--ease), transform .18s var(--ease); }
 .nsfw-row:hover .nsfw-veil img, .nsfw-row:focus-within .nsfw-veil img{ filter: none; transform: none; }
+/* Show covers (1.0.1): every cover at once, for as long as the popup stays open. */
+.nsfw-page.is-unveiled .nsfw-veil img{ filter: none; transform: none; }
 .nsfw-meta{ display: flex; gap: 8px; margin-top: 2px; font-size: 12px; color: rgb(var(--muted)); }
 .cmp-diff.nsfw-why{ color: rgb(var(--ink)); }
 .nsfw-not{ flex: none; margin-top: 8px; opacity: 0; }
