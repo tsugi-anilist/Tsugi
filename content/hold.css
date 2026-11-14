@@ -1,0 +1,6 @@
+/* Tsugi · Loaded before the page draws anything. While a list page is being arranged
+   (data-apq-hold on <html>, see hold.js and page.js), AniList's lists stay out of sight but keep
+   their place and size, so AniList keeps loading rows as usual. Then they appear, once, in place
+   (no fade: DESIGN.md, no entrance animations on page load). */
+html[data-apq-hold] .list-wrap,
+html[data-apq-hold] .apq-lv-bar { opacity: 0 !important; pointer-events: none !important; }

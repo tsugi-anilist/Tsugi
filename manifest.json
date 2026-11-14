@@ -1,0 +1,138 @@
+{
+  "manifest_version": 3,
+  "name": "Tsugi",
+  "short_name": "Tsugi",
+  "version": "1.0",
+  "description": "Priority queue, pins, mass edit, posters, list filters, Ctrl+K and MyAnimeList sync for AniList. Unofficial, not affiliated.",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Tsugi",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "popup.html?view=panel"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "contextMenus",
+    "sidePanel",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://anilist.co/*",
+    "https://graphql.anilist.co/*",
+    "https://api.tenrai.org/*",
+    "https://api.animethemes.moe/*"
+  ],
+  "optional_host_permissions": [
+    "https://myanimelist.net/*",
+    "https://api.myanimelist.net/*",
+    "https://mangabaka.org/*",
+    "https://api.mangabaka.org/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://anilist.co/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start",
+      "exclude_matches": [
+        "https://anilist.co/api/*"
+      ]
+    },
+    {
+      "matches": [
+        "https://anilist.co/*"
+      ],
+      "js": [
+        "listquery.js",
+        "content/hold.js"
+      ],
+      "css": [
+        "content/hold.css"
+      ],
+      "run_at": "document_start",
+      "exclude_matches": [
+        "https://anilist.co/api/*"
+      ]
+    },
+    {
+      "matches": [
+        "https://anilist.co/api/v2/oauth/pin*"
+      ],
+      "js": [
+        "pin.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://anilist.co/*"
+      ],
+      "js": [
+        "palettes.js",
+        "nsfw.js",
+        "content/core.js",
+        "content/edit.js",
+        "content/page.js",
+        "content/popover.js",
+        "content/hub.js",
+        "content/lists.js",
+        "content/views.js",
+        "content/posters.js",
+        "content/order.js",
+        "content/history.js",
+        "content/privacy.js",
+        "content/outside.js",
+        "content/mass.js",
+        "content/health.js",
+        "content/feed.js",
+        "content/social.js",
+        "content/palette.js",
+        "content/styles.js",
+        "content/main.js"
+      ],
+      "run_at": "document_idle",
+      "exclude_matches": [
+        "https://anilist.co/api/*"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "logos/myanimelist.svg",
+        "logos/reddit.png"
+      ],
+      "matches": [
+        "https://anilist.co/*"
+      ]
+    },
+    {
+      "resources": [
+        "logos/anilist.png"
+      ],
+      "matches": [
+        "https://myanimelist.net/*"
+      ]
+    }
+  ]
+}
