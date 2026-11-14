@@ -10,6 +10,18 @@ It started as a small script to sort my Planning list by priority, because I nev
 
 ![Tsugi's popup over an AniList list shown as posters](docs/screenshots/overview.webp)
 
+**In short:**
+
+- Priorities and pins on your lists, so you always know what's next
+- A popup on the toolbar with your lists, +1, search and full title pages
+- Posters, new sorts, groups and filters on AniList's own list pages
+- Two-way sync with MyAnimeList and MangaBaka
+- NSFW titles made private in one go, or just hidden while you browse
+- Mass edit, with a preview first and Undo after
+- Ctrl+K, feed filters, watch-order warnings, 12 color palettes, and more
+
+Everything can be turned off, and almost everything has an Undo.
+
 ## What it does
 
 ### Know what to watch next
@@ -30,17 +42,23 @@ Posters, as a fourth layout next to AniList's own three. Sorts AniList doesn't h
 
 ![A list as posters, with filters in the sidebar](docs/screenshots/posters.webp)
 
+### Sync with MyAnimeList and MangaBaka
+
+Connect them once and they follow your AniList list, both ways: a change made on any of the three reaches the other two within minutes, whether you made it in Tsugi, on the site itself or in a phone app. The first time, a Compare page shows what's different between them, and nothing is sent until you've seen it. The Sync log lists every change with an Undo button, and you decide what travels (scores, dates, rewatches, and what happens when you remove a title).
+
+![The Sync log](docs/screenshots/sync.webp)
+
+### NSFW titles, kept to yourself
+
+You decide what counts as NSFW: AniList's 18+ mark, the Ecchi genre, AniList's 18+ tags, genres and tags of your own, or single titles you mark by hand. Tsugi shows you the titles it found and why each one counts, then makes them private on AniList in one go: only you see them on your profile and lists. One click undoes it. New ones you add later can become private by themselves. MyAnimeList has no private titles, so Tsugi can take them off your list there too, and put them back.
+
+And if you just don't want them on screen, Hide NSFW titles takes them out of your list pages, Pick for me and search, without changing anything on AniList.
+
 ### Mass edit
 
 Select titles on your list and change their status, score, progress, dates, notes, custom lists or visibility all at once. You see a preview first, and everything can be undone.
 
 ![Mass edit](docs/screenshots/mass-edit.webp)
-
-### Sync with MyAnimeList and MangaBaka
-
-Connect them once and they follow your AniList list, both ways: a change made on any of the three reaches the other two within a few minutes. The first time, a Compare page shows what's different between them. The Sync log lists every change with an Undo button, and you decide what travels (scores, dates, rewatches, and what happens when you remove a title).
-
-![The Sync log](docs/screenshots/sync.webp)
 
 ### More on every title
 
@@ -56,7 +74,6 @@ On AniList's title pages: MyAnimeList's score next to AniList's, MyAnimeList's c
 - Start and finish dates filled in for you, and a rewatch log rebuilt from your activity
 - A list check: missing dates, sequels planned before their prequels, shows you forgot in Watching
 - Pick for me, for when you can't decide
-- NSFW titles kept private, by your own rules
 - Twelve color palettes (Catppuccin, Rosé Pine, Gruvbox, Nord, Dracula, Tokyo Night...)
 - Follower counts on profiles, and why a profile page is missing
 
