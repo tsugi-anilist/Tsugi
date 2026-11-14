@@ -8,7 +8,7 @@ It started as a small script to sort my Planning list by priority, because I nev
 
 **Chrome Web Store: coming soon.** It works in Chrome, Brave, Edge, Opera and Vivaldi.
 
-![Tsugi's popup and AniList's list page as posters](docs/screenshots/overview.webp)
+![Tsugi's popup over an AniList list shown as posters](docs/screenshots/overview.webp)
 
 ## What it does
 
@@ -22,7 +22,7 @@ Give your titles a priority right on your AniList lists, or pin up to five at th
 
 Click Tsugi's button in the toolbar: what you're watching and reading as posters with +1, your Up Next, today's episodes, search and notifications. Click any poster for the title's page: your entry, editable in place, then relations, characters, staff, songs, reviews and where to watch. It can also open in its own window, in a tab or in the side panel.
 
-![The popup](docs/screenshots/popup.webp)
+<p><img src="docs/screenshots/popup.webp" width="49%" alt="The popup: what you're watching, as posters with +1"> <img src="docs/screenshots/popup-title.webp" width="49%" alt="A title's page in the popup"></p>
 
 ### Your lists, your way
 
@@ -40,13 +40,13 @@ Select titles on your list and change their status, score, progress, dates, note
 
 Connect them once and they follow your AniList list, both ways: a change made on any of the three reaches the other two within a few minutes. The first time, a Compare page shows what's different between them. The Sync log lists every change with an Undo button, and you decide what travels (scores, dates, rewatches, and what happens when you remove a title).
 
-![Compare and the Sync log](docs/screenshots/sync.webp)
+![The Sync log](docs/screenshots/sync.webp)
 
 ### More on every title
 
 On AniList's title pages: MyAnimeList's score next to AniList's, MyAnimeList's characters if you prefer them, the openings and endings with a Play button (from AnimeThemes), and links to MyAnimeList and Reddit's discussions. In the popup, scores from MangaBaka, Kitsu and a few more sites.
 
-![A title page on AniList](docs/screenshots/title-page.webp)
+![Openings and endings on AniList's title page, one of them playing](docs/screenshots/title-page.webp)
 
 ### And the small things
 
@@ -61,6 +61,13 @@ On AniList's title pages: MyAnimeList's score next to AniList's, MyAnimeList's c
 - Follower counts on profiles, and why a profile page is missing
 
 Everything can be turned off in Settings. If you only want the popup, you only get the popup.
+
+<details>
+<summary>More screenshots</summary>
+
+<p><img src="docs/screenshots/popup-title-more.webp" width="49%" alt="Relations and characters on a title's page in the popup"> <img src="docs/screenshots/palettes.webp" width="49%" alt="Themes and color palettes in Settings"></p>
+
+</details>
 
 ## Privacy
 
