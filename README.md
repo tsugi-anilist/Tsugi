@@ -6,7 +6,7 @@ Tsugi (次, "next") is a browser extension for [AniList](https://anilist.co).
 
 It started as a small script to sort my Planning list by priority, because I never knew what to watch next. Then it kept growing. Now it adds the things I always missed on AniList, on AniList's own pages and in a popup on the toolbar, and it tries hard to look like it was always part of the site.
 
-**Chrome Web Store: coming soon.** It works in Chrome, Brave, Edge, Opera and Vivaldi.
+**[Get it on the Chrome Web Store](https://chromewebstore.google.com/detail/tsugi/emdofncahjamieilnifndpiadkcndpem).** It's free, and it works in Chrome, Brave, Edge, Opera and Vivaldi.
 
 ![Tsugi's popup over an AniList list shown as posters](docs/screenshots/overview.webp)
 
@@ -94,7 +94,7 @@ Tsugi has no server. Your logins stay in your browser, and your list only goes t
 
 ## Install
 
-- **Chrome Web Store:** coming soon.
+- **[Chrome Web Store](https://chromewebstore.google.com/detail/tsugi/emdofncahjamieilnifndpiadkcndpem):** one click, and it updates by itself.
 - **By hand:** download the zip from [Releases](../../releases), unzip it, open `chrome://extensions`, turn on Developer mode, click "Load unpacked" and pick the folder.
 
 Firefox isn't supported yet. If you'd use it, tell me in the [issues](../../issues), so I know how many people want it.
